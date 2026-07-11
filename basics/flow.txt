@@ -1,0 +1,87 @@
+chronological technical flow of the entire architecture, from
+the moment I type make (which runs docker-compose) to the moment the website
+is live.
+
+
+Phase 1: The Build Phase (docker compose build)
+
+Docker reads your Dockerfiles and creates the static Images.
+
+1.  MariaDB Build: Docker pulls the Debian OS. It runs apt-get install
+    mariadb-server. It copies script.sh into the image and makes it executable.
+    The image is saved. (No database files are created).
+2.  WordPress Build: Docker pulls Debian. It installs PHP and WP-CLI. It copies
+    auto_config.sh into the image. The image is saved. (No WordPress files are
+    downloaded).
+3.  NGINX Build: Docker pulls Debian. It installs NGINX and OpenSSL. It runs the
+    openssl command to generate the TLS certificates. It copies your nginx.conf.
+    The image is saved.
+
+End of Phase 1: You now have three frozen, static images on your hard drive.
+They contain the raw software, but no data, no configuration variables, and no
+connections.
+
+Phase 2: The Infrastructure Setup (docker compose up)
+
+Docker prepares the environment before turning on the containers.
+
+1.  Network: Docker creates a virtual bridge network called inception. This
+    allows the containers to resolve each other's IP addresses using their
+    container names (e.g., WordPress can ping mariadb).
+2.  Environment Variables: Docker reads your .env file and loads all the
+    passwords and usernames into the RAM of the containers.
+3.  Volume Mounting (The Interception):
+      - Docker tells the Linux Kernel to mount /home/login/data/mariadb over the
+        MariaDB container's /var/lib/mysql.
+      - Docker tells the Linux Kernel to mount /home/login/data/wordpress over
+        the WordPress container's /var/www/html.
+      - Docker mounts that same WordPress VM folder over the NGINX container's
+        /var/www/html.
+
+End of Phase 2: The infrastructure exists. The directories are linked. The
+folders on your VM are currently empty.
+
+Phase 3: Container Execution (The Entrypoints)
+
+Docker starts the containers. The containers execute their ENTRYPOINT scripts.
+
+Step 1: MariaDB Starts
+
+1.  Docker boots the MariaDB container.
+2.  It executes script.sh.
+3.  The script checks /var/lib/mysql. Because your VM folder is empty, the check
+    returns true (empty).
+4.  The script executes mysql_install_db and the SQL commands to create your
+    WordPress user and database.
+5.  The Linux Kernel intercepts the write requests and physically saves the
+    database files to /home/login/data/mariadb on your VM.
+6.  The script finishes, and the mysqld daemon starts. MariaDB is now actively
+    listening on port 3306.
+
+Step 2: WordPress Starts (Because of depends_on: mariadb, it waits for MariaDB
+to boot)
+
+1.  Docker boots the WordPress container.
+2.  It executes auto_config.sh.
+3.  The script runs wp core download. The Linux Kernel intercepts this and
+    physically saves the WordPress PHP files to /home/login/data/wordpress on
+    your VM.
+4.  The script runs wp core install. WP-CLI connects over the inception network
+    to mariadb:3306. It authenticates using the variables injected from the .env
+    file and creates the WordPress tables inside the database.
+5.  The script finishes, and the php-fpm daemon starts. PHP is now actively
+    listening on port 9000.
+
+Step 3: NGINX Starts (Because of depends_on: wordpress, it starts last)
+
+1.  Docker boots the NGINX container.
+2.  NGINX reads nginx.conf, which tells it to look at /var/www/html.
+3.  Because /var/www/html is mounted to the VM, and the WordPress container just
+    finished downloading the files to that exact VM folder, NGINX instantly sees
+    all the WordPress files.
+4.  NGINX starts its daemon and listens on port 443.
+
+End of Phase 3: The stack is fully operational. When a user visits your website,
+NGINX receives the request on 443, reads the PHP files from the VM mount,
+forwards them to WordPress on port 9000 for processing, which queries MariaDB on
+port 3306 for the data.

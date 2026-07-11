@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Fundamentals: Under the Hood</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f4f4f9; }
+        header { background: #2c3e50; color: #2c2323; padding: 2rem; text-align: center; border-radius: 8px; margin-bottom: 2rem; }
+        h1 { margin: 0; }
+        h2 { color: #2980b9; border-bottom: 2px solid #2980b9; padding-bottom: 10px; margin-top: 2rem; }
+        h3 { color: #2c3e50; margin-top: 1.5rem; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        code { background: #e8e8e8; padding: 2px 5px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; }
+        pre { background: #2d3436; color: #dfe6e9; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        .highlight { font-weight: bold; color: #d35400; }
+        footer { text-align: center; margin-top: 3rem; font-size: 0.9rem; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Docker Fundamentals</h1>
+    <p>A technical guide to Namespaces, Cgroups, and UnionFS</p>
+</header>
+
+<section class="card">
+    <h2>1. What is Docker?</h2>
+    <p>Docker is a tool that allows you to package an application and its dependencies into a <b>container</b>. Unlike a Virtual Machine, a container does not bundle a full Operating System. Instead, it uses <b>Linux Kernel features</b> to isolate processes from the host system.</p>
+</section>
+
+<section class="card">
+    <h2>2. Linux Namespaces (The Walls)</h2>
+    <p>Namespaces provide <b>isolation</b> by partitioning kernel resources. They create "Filtered Perspectives," where a process believes it has its own private instance of the OS.</p>
+    <ul>
+        <li><span class="highlight">PID Namespace:</span> Allows a process to have <b>PID 1</b> inside the container. It cannot see or interact with processes in other namespaces.</li>
+        <li><span class="highlight">NET Namespace:</span> Provides a private network stack, including its own IP addresses, routing tables, and firewall rules.</li>
+        <li><span class="highlight">MNT Namespace:</span> Isolates mount points, so the container sees a different root (<code>/</code>) filesystem than the host.</li>
+        <li><span class="highlight">UTS Namespace:</span> Allows the container to have its own hostname and domain name.</li>
+        <li><span class="highlight">USER Namespace:</span> Maps a root user inside the container to a non-privileged user on the host for security.</li>
+    </ul>
+    <p><b>Technical Implementation:</b> Namespaces are created using the <code>clone()</code> or <code>unshare()</code> system calls with specific flags like <code>CLONE_NEWPID</code>.</p>
+</section>
+
+<section class="card">
+    <h2>3. Control Groups / cgroups (The Rules)</h2>
+    <p>While Namespaces handle what a process can <b>see</b>, Cgroups handle what a process can <b>use</b>. They prevent a single container from consuming all host resources.</p>
+    <ul>
+        <li><b>Resource Limits:</b> Setting maximum thresholds for RAM (e.g., 512MB) and CPU usage.</li>
+        <li><b>Prioritization:</b> Assigning more CPU "shares" to specific containers.</li>
+        <li><b>Control:</b> Freezing or restarting groups of processes.</li>
+    </ul>
+</section>
+
+<section class="card">
+    <h2>4. UnionFS (The Filesystem)</h2>
+    <p>Union File System is a service that "stacks" multiple directories (branches) to make them appear as one merged directory.</p>
+    <h3>Key Mechanisms:</h3>
+    <ul>
+        <li><span class="highlight">Layering:</span> Docker images are made of read-only layers. These layers are shared across containers to save space.</li>
+        <li><span class="highlight">Priority Rule:</span> When two layers contain the same file, the file in the higher-priority (top) layer "shadows" the one below.</li>
+        <li><span class="highlight">Copy-on-Write (CoW):</span> If a process tries to modify a read-only file, the Kernel copies it to the top <b>writable layer</b> first. The original remains unchanged.</li>
+        <li><span class="highlight">Whiteouts:</span> To "delete" a file from a read-only lower layer, the system creates a "whiteout" file in the writable layer that hides the lower file from the merged view.</li>
+    </ul>
+</section>
+
+<section class="card">
+    <h2>5. Comparison: School Setup vs. Docker</h2>
+    <p>Your current environment (at school) uses <b>Standard Permissions</b>. You share the same Namespace, so you can see other users' folders in <code>/home</code>, but "Permission Denied" stops you from entering. </p>
+    <p><b>Docker</b> goes further: It uses Namespaces so you cannot even <i>see</i> that other users exist, and UnionFS so that if you "delete" a system file, you only affect your own private "top layer" without touching the actual system.</p>
+</section>
+
+<section class="card">
+    <h2>Summary Checklist</h2>
+    <pre>
+1. Namespaces  -> Isolation (Walls)
+2. Cgroups     -> Restriction (Resource limits)
+3. UnionFS     -> Efficiency (Layered Filesystem)
+4. Capabilities-> Security (Stripping Root powers)
+    </pre>
+</section>
+
+<footer>
+    <p>Generated for 42 School - Project: Inception Preparation</p>
+</footer>
+
+</body>
+</html>
