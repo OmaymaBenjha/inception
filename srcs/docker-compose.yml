@@ -1,8 +1,8 @@
-version: '3'
 
 services:
   mariadb:
     build: ./requirements/mariadb
+    image: mariadb           # <--- ADDED: Forces image name to match service name
     container_name: mariadb
     restart: always
     env_file: .env
@@ -13,6 +13,7 @@ services:
 
   wordpress:
     build: ./requirements/wordpress
+    image: wordpress         # <--- ADDED: Forces image name to match service name
     container_name: wordpress
     restart: always
     env_file: .env
@@ -25,10 +26,11 @@ services:
 
   nginx:
     build: ./requirements/nginx
+    image: nginx             # <--- ADDED: Forces image name to match service name
     container_name: nginx
     restart: always
     ports:
-      - "443:443"
+      - "443:443"            # Correct: Only port 443 is exposed
     depends_on:
       - wordpress
     volumes:
@@ -46,10 +48,10 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /home/${USER}/data/mariadb
+      device: /home/oben-jha/data/mariadb   # <--- FIXED: Hardcoded to avoid 'sudo' root path errors
   wp-data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /home/${USER}/data/wordpress
+      device: /home/oben-jha/data/wordpress # <--- FIXED: Hardcoded to avoid 'sudo' root path errors

@@ -5,10 +5,10 @@ import json
 
 # --- Configuration ---
 # Add the file extensions you want to include (must be a tuple)
-TARGET_EXTENSIONS = ('.cnf', '.sh', '.conf')
+TARGET_EXTENSIONS = ('.cnf', '.sh', '.conf', '.dockerignore', '.env', '.yml')
 
 # Add the exact filenames you want to include (case-insensitive check is used below)
-TARGET_FILENAMES = ('Dockerfile',)
+TARGET_FILENAMES = ('Dockerfile', 'Makefile')
 
 # The name of the output JSON file
 OUTPUT_FILENAME = 'project_data.json'
