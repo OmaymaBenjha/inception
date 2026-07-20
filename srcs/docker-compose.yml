@@ -37,7 +37,17 @@ services:
       - wp-data:/var/www/html
     networks:
       - inception
-
+  ftp:
+    build: ./requirements/ftp
+    image: ftp
+    container_name: ftp
+    restart: always
+    ports:
+      - "21:21"
+      - "50000-50100:50000-50100"
+    volumes:
+      - wp-data:/var/www/html
+    env_file: .env
 networks:
   inception:
     driver: bridge
