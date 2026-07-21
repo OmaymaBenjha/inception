@@ -10,7 +10,13 @@ services:
       - db-data:/var/lib/mysql
     networks:
       - inception
-
+  redis:
+    build: ./requirements/redis
+    image: redis
+    container_name: redis
+    restart: always
+    networks:
+      - inception
   wordpress:
     build: ./requirements/wordpress
     image: wordpress        
@@ -19,11 +25,20 @@ services:
     env_file: .env
     depends_on:
       - mariadb
+      - redis
     volumes:
       - wp-data:/var/www/html
     networks:
       - inception
-
+  adminer:
+    build: ./requirements/adminer
+    image: adminer
+    container_name: adminer
+    restart: always
+    depends_on:
+      - mariadb
+    networks:
+      - inception
   nginx:
     build: ./requirements/nginx
     image: nginx            

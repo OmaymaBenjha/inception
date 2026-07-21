@@ -22,6 +22,14 @@ if [ ! -f /var/www/html/wp-config.php ]; then
         $WP_USR $WP_EMAIL \
         --user_pass=$WP_PWD \
         --role=author
+
+    wp config set WP_REDIS_HOST redis --allow-root
+    wp config set WP_REDIS_PORT 6379 --raw --allow-root
+    wp config set WP_CACHE_KEY_SALT $DOMAIN_NAME --allow-root
+    wp config set WP_CACHE true --raw --allow-root
+    
+    wp plugin install redis-cache --activate --allow-root
+    wp redis enable --allow-root
 fi
 
 exec /usr/sbin/php-fpm8.2 -F

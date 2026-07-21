@@ -1,22 +1,19 @@
 #!/bin/sh
 set -e
 
-# Create the FTP user if it doesn't already exist
-if ! id "$FTP_USER" >/dev/null 2>&1; then
-    useradd -m -d /home/"$FTP_USER" -s /bin/bash "$FTP_USER"
-fi
+USER_CLEAN=$(echo "$FTP_USER" | tr -d '\r')
+PWD_CLEAN=$(echo "$FTP_PWD" | tr -d '\r')
 
-# Set the user's password
-echo "${FTP_USER}:${FTP_PWD}" | chpasswd
 
-# Make sure the shared directory exists
 mkdir -p /var/www/html
 
-# Give the FTP user ownership
-chown -R "$FTP_USER":"$FTP_USER" /var/www/html
+if ! id "$USER_CLEAN" >/dev/null 2>&1; then
+    useradd -m -d /var/www/html -s /bin/bash "$USER_CLEAN"
+fi
 
-# Create the vsftpd user list
-echo "$FTP_USER" > /etc/vsftpd.user_list
+echo "${USER_CLEAN}:${PWD_CLEAN}" | chpasswd
 
-# Start the FTP server
-exec /usr/sbin/vsftpd /etc/vsftpd.conf
+chown -R "$USER_CLEAN":"$USER_CLEAN" /var/www/html
+
+
+exec proftpd -n -c /etc/proftpd/proftpd.conf
