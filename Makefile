@@ -3,6 +3,7 @@ USER = oben-jha
 all:
 	@mkdir -p /home/$(USER)/data/mariadb
 	@mkdir -p /home/$(USER)/data/wordpress
+	@mkdir -p /home/$(USER)/data/portainer
 	@docker compose -f srcs/docker-compose.yml up -d --build
 
 clean:
@@ -11,6 +12,7 @@ clean:
 fclean: clean
 	@sudo rm -rf /home/$(USER)/data/mariadb/*
 	@sudo rm -rf /home/$(USER)/data/wordpress/*
+	@sudo rm -rf /home/$(USER)/data/portainer/*
 	@docker system prune -af --volumes
 
 re: fclean all

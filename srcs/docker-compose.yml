@@ -63,6 +63,27 @@ services:
     volumes:
       - wp-data:/var/www/html
     env_file: .env
+  website:
+    build: ./requirements/website
+    image: website
+    container_name: website
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - inception
+  portainer:
+    build: ./requirements/portainer
+    image: portainer
+    container_name: portainer
+    restart: always
+    ports:
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    networks:
+      - inception  
 networks:
   inception:
     driver: bridge
@@ -80,3 +101,9 @@ volumes:
       type: none
       o: bind
       device: /home/oben-jha/data/wordpress
+  portainer-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/oben-jha/data/portainer
