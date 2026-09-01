@@ -6,6 +6,11 @@ all:
 	@mkdir -p /home/$(USER)/data/portainer
 	@docker compose -f srcs/docker-compose.yml up -d --build
 
+stop:
+	@docker compose -f srcs/docker-compose.yml stop
+start:
+	@docker compose -f srcs/docker-compose.yml start
+
 clean:
 	@docker compose -f srcs/docker-compose.yml down
 
