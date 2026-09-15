@@ -5,8 +5,7 @@ RUN apt-get update && apt-get install -y \
 	php8.2-fpm \
 	mariadb-client \
 	wget \
-	curl \
-	&& rm -rf /var/lib/apt/lists/*
+	curl
 
 RUN wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
 	&& chmod +x wp-cli.phar \

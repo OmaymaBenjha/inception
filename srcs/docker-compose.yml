@@ -10,6 +10,12 @@ services:
       - db-data:/var/lib/mysql
     networks:
       - inception
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${SQL_ROOT_PWD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
   redis:
     build: ./requirements/redis
     image: redis
@@ -17,6 +23,13 @@ services:
     restart: always
     networks:
       - inception
+    command: ["--requirepass", "${REDIS_PWD}"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PWD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
   wordpress:
     build: ./requirements/wordpress
     image: wordpress        
@@ -24,19 +37,23 @@ services:
     restart: always
     env_file: .env
     depends_on:
-      - mariadb
-      - redis
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - wp-data:/var/www/html
     networks:
       - inception
+
   adminer:
     build: ./requirements/adminer
     image: adminer
     container_name: adminer
     restart: always
     depends_on:
-      - mariadb
+      mariadb:
+        condition: service_healthy
     networks:
       - inception
   nginx:
@@ -48,6 +65,7 @@ services:
       - "443:443"            
     depends_on:
       - wordpress
+
     volumes:
       - wp-data:/var/www/html
     networks:
@@ -68,8 +86,6 @@ services:
     image: website
     container_name: website
     restart: always
-    ports:
-      - "3000:3000"
     networks:
       - inception
   portainer:
@@ -86,7 +102,6 @@ services:
       - inception  
 networks:
   inception:
-    driver: bridge
 
 volumes:
   db-data:
