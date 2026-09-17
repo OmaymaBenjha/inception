@@ -41,6 +41,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test : ["CMD-SHELL",  "nc -z 127.0.0.1 9000 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     volumes:
       - wp-data:/var/www/html
     networks:
@@ -64,7 +70,8 @@ services:
     ports:
       - "443:443"            
     depends_on:
-      - wordpress
+      wordpress:
+        condition: service_healthy
 
     volumes:
       - wp-data:/var/www/html
@@ -88,16 +95,13 @@ services:
     restart: always
     networks:
       - inception
-  portainer:
-    build: ./requirements/portainer
-    image: portainer
-    container_name: portainer
+  glances:
+    build: ./requirements/glances
+    image: glances
+    container_name: glances
     restart: always
     ports:
-      - "9443:9443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer-data:/data
+      - "61208:61208"
     networks:
       - inception  
 networks:

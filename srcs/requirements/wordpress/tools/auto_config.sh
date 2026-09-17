@@ -21,7 +21,7 @@ if ! wp core is-installed --allow-root; then
         --admin_email="$WP_ADMIN_EMAIL"
 fi
 
-if ! wp user get "$WP_USER" --allow-root >/dev/null 2>&1; then
+if ! wp user get "$WP_USR" --allow-root >/dev/null 2>&1; then
     wp user create --allow-root \
         $WP_USR $WP_EMAIL \
         --user_pass=$WP_PWD \
