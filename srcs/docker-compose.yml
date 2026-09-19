@@ -42,11 +42,11 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test : ["CMD-SHELL",  "nc -z 127.0.0.1 9000 || exit 1"]
-      interval: 5s
+      test: ["CMD", "pgrep", "php-fpm8.2"]
+      interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 5s
+      retries: 30
+      start_period: 120s
     volumes:
       - wp-data:/var/www/html
     networks:
@@ -72,7 +72,6 @@ services:
     depends_on:
       wordpress:
         condition: service_healthy
-
     volumes:
       - wp-data:/var/www/html
     networks:
@@ -95,15 +94,18 @@ services:
     restart: always
     networks:
       - inception
-  glances:
-    build: ./requirements/glances
-    image: glances
-    container_name: glances
-    restart: always
-    ports:
-      - "61208:61208"
+  backup:
+    container_name: backup
+    build: requirements/backup
+    image: backup
     networks:
-      - inception  
+      - inception
+    depends_on:
+      - mariadb
+    volumes:
+      - db-data:/db-data
+      - backup-data:/backup
+    restart: always
 networks:
   inception:
 
@@ -120,9 +122,9 @@ volumes:
       type: none
       o: bind
       device: /home/oben-jha/data/wordpress
-  portainer-data:
+  backup-data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /home/oben-jha/data/portainer
+      device: /home/oben-jha/data/backup

@@ -21,14 +21,14 @@ if ! wp core is-installed --allow-root; then
         --admin_email="$WP_ADMIN_EMAIL"
 fi
 
-if ! wp user get "$WP_USR" --allow-root >/dev/null 2>&1; then
+if ! wp user get "$WP_USR" --allow-root &>/dev/null; then
     wp user create --allow-root \
         $WP_USR $WP_EMAIL \
         --user_pass=$WP_PWD \
         --role=author
 fi
 
-if ! wp config get WP_REDIS_HOST --allow-root >/dev/null 2>&1; then
+if ! wp config get WP_REDIS_HOST --allow-root &>/dev/null; then
     wp config set WP_REDIS_HOST redis --allow-root
     wp config set WP_REDIS_PORT 6379 --raw --allow-root
     wp config set WP_CACHE_KEY_SALT "$DOMAIN_NAME" --allow-root
