@@ -1,6 +1,5 @@
 FROM debian:bookworm
 
-# Install PHP and the PHP-MySQL extension (so it can talk to MariaDB)
 RUN apt-get update && \
     apt-get install -y wget php php-fpm php-mysql
 

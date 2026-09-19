@@ -41,6 +41,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgrep", "php-fpm8.2"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
     volumes:
       - wp-data:/var/www/html
     networks:
@@ -64,8 +70,8 @@ services:
     ports:
       - "443:443"            
     depends_on:
-      - wordpress
-
+      wordpress:
+        condition: service_healthy
     volumes:
       - wp-data:/var/www/html
     networks:
@@ -88,18 +94,18 @@ services:
     restart: always
     networks:
       - inception
-  portainer:
-    build: ./requirements/portainer
-    image: portainer
-    container_name: portainer
-    restart: always
-    ports:
-      - "9443:9443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer-data:/data
+  backup:
+    container_name: backup
+    build: requirements/backup
+    image: backup
     networks:
-      - inception  
+      - inception
+    depends_on:
+      - mariadb
+    volumes:
+      - db-data:/db-data
+      - backup-data:/backup
+    restart: always
 networks:
   inception:
 
@@ -116,9 +122,9 @@ volumes:
       type: none
       o: bind
       device: /home/oben-jha/data/wordpress
-  portainer-data:
+  backup-data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /home/oben-jha/data/portainer
+      device: /home/oben-jha/data/backup
