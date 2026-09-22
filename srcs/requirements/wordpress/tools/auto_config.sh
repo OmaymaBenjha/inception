@@ -30,8 +30,6 @@ fi
 
 if ! wp config get WP_REDIS_HOST --allow-root &>/dev/null; then
     wp config set WP_REDIS_HOST redis --allow-root
-    wp config set WP_REDIS_PORT 6379 --raw --allow-root
-    wp config set WP_CACHE_KEY_SALT "$DOMAIN_NAME" --allow-root
     wp config set WP_CACHE true --raw --allow-root
     wp config set WP_REDIS_PASSWORD "$REDIS_PWD" --allow-root
     

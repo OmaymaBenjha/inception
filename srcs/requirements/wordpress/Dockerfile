@@ -17,6 +17,5 @@ COPY ./tools/auto_config.sh /usr/local/bin/auto_config.sh
 RUN chmod +x /usr/local/bin/auto_config.sh
 
 
-EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/auto_config.sh"]
 
