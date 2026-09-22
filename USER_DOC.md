@@ -1,96 +1,135 @@
+# USER_DOC.md
+
 # User Documentation
 
-This document explains, from an end-user / administrator point of view, how to use the
-Inception infrastructure: what it provides, how to start and stop it, how to reach the
-site and admin panel, where credentials live, and how to check that everything is
-healthy.
+## Services
 
-## 1. What this stack provides
+The infrastructure provides the following services:
 
-Running the project brings up the following services, each in its own container, all
-connected through the `inception` Docker network:
+- **NGINX**: HTTPS entry point for the WordPress website.
+- **WordPress + PHP-FPM**: Website application.
+- **MariaDB**: WordPress database.
+- **Redis**: WordPress cache.
+- **Adminer**: Database administration interface.
+- **FTP**: Access to the WordPress website files.
+- **Static website**: Additional static website service.
+- **Backup**: Periodic backup of MariaDB data.
 
-| Service      | Role                                                              |
-|--------------|--------------------------------------------------------------------|
-| `nginx`      | Single entrypoint, serves HTTPS on port `443` (TLSv1.2/1.3 only)  |
-| `wordpress`  | WordPress + php-fpm, the actual website                          |
-| `mariadb`    | Database backing WordPress                                       |
-| `redis`      | Object cache for WordPress                                       |
-| `adminer`    | Lightweight web UI to inspect/manage the MariaDB database         |
-| `ftp`        | FTP access to the WordPress files volume                         |
-| `website`    | A small static portfolio site (bonus), served on port `3000`      |
-| `portainer`  | Web UI to monitor/manage the Docker containers, port `9443`       |
+## Start the project
 
-Two named volumes persist data across restarts, both stored under
-`/home/oben-jha/data/` on the host:
-- `db-data` → MariaDB database files
-- `wp-data` → WordPress files (also shared with `nginx` and `ftp`)
-
-## 2. Starting and stopping the project
-
-From the root of the repository:
+From the project root:
 
 ```bash
-make        # builds every image and starts all containers in the background
-make clean  # stops and removes the containers
-make fclean # clean + wipes persisted data (mariadb/wordpress/portainer) + prunes Docker
-make re     # fclean + make, for a full fresh restart
+make
 ```
 
-`make` also creates the host data directories (`/home/oben-jha/data/mariadb`,
-`/home/oben-jha/data/wordpress`, `/home/oben-jha/data/portainer`) before bringing the
-stack up.
+## Stop the project
 
-## 3. Accessing the website and admin panel
+```bash
+make stop
+```
 
-- WordPress site: `https://oben-jha.42.fr`
-  (make sure `oben-jha.42.fr` resolves to the VM's IP, e.g. via `/etc/hosts` on the
-  machine you're browsing from)
-- WordPress admin dashboard: `https://oben-jha.42.fr/wp-admin`
-- Adminer (database UI): `https://oben-jha.42.fr/adminer`
-- Static portfolio site (bonus): `https://<vm-ip>:3000`
-- Portainer (container management, bonus): `https://<vm-ip>:9443`
+## Start stopped containers
 
-Only port `443` (nginx) is meant to be the entrypoint for the WordPress site itself;
-the bonus services (`website`, `portainer`, `ftp`) expose their own additional ports.
+```bash
+make start
+```
 
-## 4. Credentials
+## Remove the containers
 
-All credentials are defined as environment variables in `srcs/.env` (not committed to
-Git). Current values used in this setup:
+```bash
+make clean
+```
 
-- **WordPress administrator**: username `oben-jha_boss` (deliberately avoids
-  "admin"/"administrator" per the subject's rule), password and email set via
-  `WP_ADMIN_PWD` / `WP_ADMIN_EMAIL` in `.env`.
-- **WordPress regular user**: username from `WP_USR`, password from `WP_PWD`.
-- **MariaDB**: application user/password from `SQL_USR` / `SQL_PWD`, database name
-  `SQL_DB`, root password `SQL_ROOT_PWD`.
-- **FTP**: username/password from `FTP_USER` / `FTP_PWD`.
+## Remove the project data and Docker resources
 
-To view or change any credential, open `srcs/.env` directly — never look for
-passwords hardcoded in a Dockerfile, there aren't any.
+```bash
+make fclean
+```
 
-## 5. Checking that everything is running correctly
+## Access the website
 
-List running containers and their status:
+Open:
+
+```text
+[https://oben-jha.42.fr](https://oben-jha.42.fr)
+```
+
+The browser may display a warning because the project uses a self-signed TLS certificate.
+
+## Access WordPress
+
+The WordPress website is available through the domain above.
+
+The WordPress administrator account is created during the WordPress container initialization.
+
+## Access Adminer
+
+Adminer is available through:
+
+```text
+[https://oben-jha.42.fr/adminer](https://oben-jha.42.fr/adminer)
+```
+
+It is used to manage the MariaDB database.
+
+## Access the static website
+
+The additional static website is available through:
+
+```text
+[https://oben-jha.42.fr/website/](https://oben-jha.42.fr/website/)
+```
+
+## Access FTP
+
+The FTP service uses port `21` and passive ports `50000-50100`.
+
+A compatible FTP client such as FileZilla can be used with:
+
+- Host: `oben-jha.42.fr`
+- Port: `21`
+- User: the FTP user defined in `.env`
+- Password: the FTP password defined in `.env`
+
+## Credentials
+
+Project credentials are stored in the local `.env` file.
+
+Do not publish the `.env` file or its passwords in the Git repository.
+
+The `.env` file contains credentials for:
+
+- MariaDB
+- WordPress administrator
+- WordPress user
+- Redis
+- FTP
+
+## Check the services
+
+List running containers:
+
+```bash
+docker ps
+```
+
+Check the Compose services:
 
 ```bash
 docker compose -f srcs/docker-compose.yml ps
 ```
 
-All services should show as `Up`. Useful follow-up checks:
+View the logs of a service:
 
 ```bash
-# Tail logs for a specific service
-docker compose -f srcs/docker-compose.yml logs -f wordpress
-
-# Confirm the site answers over HTTPS
-curl -k https://oben-jha.42.fr
-
-# Confirm the database is reachable
-docker exec -it mariadb mariadb -u root -p
+docker logs <container_name>
 ```
 
-If a container keeps restarting, `docker compose logs <service>` is the first place
-to look — every service is configured with `restart: always`, so a crash loop shows
-up as repeated restarts rather than a permanently stopped container.
+For example:
+
+```bash
+docker logs nginx
+docker logs wordpress
+docker logs mariadb
+```

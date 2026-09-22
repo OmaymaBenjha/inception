@@ -1,6 +1,5 @@
 #!/bin/sh
 
-echo "starting backup service every 7 minutes for mariadb database.."
 
 while true;
 do
@@ -12,7 +11,7 @@ do
 	echo "backup mariadb server at $time in $backup_folder"
 	cp -Rf /db-data/* /backup/"${backup_folder}"
 	
-	sleep 7m
+	sleep 15m
 done
 
 exit 0

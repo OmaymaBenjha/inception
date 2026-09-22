@@ -1,120 +1,290 @@
+# DEV_DOC.md
+
 # Developer Documentation
- 
-This document explains how to set up, build, and work on the Inception project as a
-developer: environment prerequisites, configuration/secrets, build & run commands,
-container/volume management, and where project data lives.
- 
-## 1. Prerequisites
- 
-- A Virtual Machine (the subject requires this project to run inside a VM, not bare
-  metal).
-- Docker Engine + the `docker compose` plugin installed on the VM.
-- The domain `oben-jha.42.fr` resolving to the VM's local IP (e.g. an `/etc/hosts`
-  entry on the client, or a DNS entry on the VM itself pointing to `127.0.0.1`).
-## 2. Repository layout
- 
-```
+
+## Prerequisites
+
+The project is designed to run inside a virtual machine.
+
+Install:
+
+- Docker
+- Docker Compose
+- Make
+
+## Project structure
+
+The main project files are organized as follows:
+
+```text
 .
 ├── Makefile
-└── srcs/
-    ├── .env                     # environment variables (not committed)
+└── srcs
+    ├── .env
     ├── docker-compose.yml
-    └── requirements/
-        ├── nginx/
-        ├── wordpress/
-        ├── mariadb/
-        ├── redis/                # bonus: WordPress cache
-        ├── adminer/               # bonus: DB admin UI
-        ├── ftp/                   # bonus: FTP access to wp-data
-        ├── website/                # bonus: static portfolio site
-        └── portainer/              # bonus: container management UI
+    └── requirements
+        ├── mariadb
+        ├── nginx
+        ├── wordpress
+        └── bonus
+            ├── adminer
+            ├── backup
+            ├── ftp
+            ├── redis
+            └── website
 ```
- 
-Each service directory contains its own `Dockerfile` (and `conf/`, `tools/`
-subfolders where relevant, e.g. entrypoint scripts and config files). Every image is
-built from `debian:bookworm` — nothing is pulled pre-built except the base OS image,
-per the subject's rules.
- 
-## 3. Configuration and secrets
- 
-All configuration is centralized in `srcs/.env`, loaded by every service via
-`env_file: .env` in `docker-compose.yml`. It currently defines:
- 
-- `DOMAIN_NAME` — the site's domain (`oben-jha.42.fr`)
-- `SQL_DB`, `SQL_USR`, `SQL_PWD`, `SQL_ROOT_PWD` — MariaDB setup
-- `WP_ADMIN_USR`, `WP_ADMIN_PWD`, `WP_ADMIN_EMAIL` — WordPress admin account
-- `WP_USR`, `WP_EMAIL`, `WP_PWD` — a second, non-admin WordPress user
-- `FTP_USER`, `FTP_PWD` — FTP account for the `ftp` bonus service
-`.env` must never be committed to Git and must be created locally before running
-`make`. No password is hardcoded in any Dockerfile or script — everything is read
-from these environment variables at container start.
- 
-## 4. Building and launching
- 
+
+Each service has its own Dockerfile.
+
+## Configuration
+
+The main Compose configuration is:
+
+```text
+srcs/docker-compose.yml
+```
+
+Environment variables are stored in:
+
+```text
+srcs/.env
+```
+
+The `.env` file contains domain, database, WordPress, Redis and FTP configuration.
+
+Sensitive credentials must not be committed to Git.
+
+## Build and launch
+
+From the repository root:
+
 ```bash
-make        # mkdir -p the three host data dirs, then `docker compose up -d --build`
-make clean  # docker compose down
-make fclean # clean + wipe host data dirs + docker system prune -af --volumes
-make re     # fclean followed by make
+make
 ```
- 
-Under the hood, `make all` runs:
- 
+
+The Makefile creates:
+
+```text
+/home/oben-jha/data/mariadb
+/home/oben-jha/data/wordpress
+/home/oben-jha/data/backup
+```
+
+It then runs:
+
 ```bash
 docker compose -f srcs/docker-compose.yml up -d --build
 ```
- 
-which builds each service's Dockerfile as declared in `srcs/docker-compose.yml` and
-starts every container attached to the `inception` bridge network.
- 
-## 5. Managing containers and volumes
- 
+
+## Docker Compose commands
+
+Check the services:
+
 ```bash
-# Status of all services
 docker compose -f srcs/docker-compose.yml ps
- 
-# Rebuild + restart a single service
-docker compose -f srcs/docker-compose.yml up -d --build wordpress
- 
-# Logs
-docker compose -f srcs/docker-compose.yml logs -f <service>
- 
-# Shell into a running container
-docker exec -it <service> bash
- 
-# List volumes and inspect where they're mounted
-docker volume ls
-docker volume inspect srcs_db-data
 ```
- 
-## 6. Where data lives and how it persists
- 
-Two named volumes back the persistent data, both configured with the `local` driver
-using a **bind-style mount under the hood** (`driver_opts: type: none, o: bind`) so
-Docker manages them as named volumes while the data physically sits at a fixed host
-path, as required by the subject:
- 
-- `db-data` → `/home/oben-jha/data/mariadb` (MariaDB's `/var/lib/mysql`)
-- `wp-data` → `/home/oben-jha/data/wordpress` (WordPress's `/var/www/html`, shared
-  read/write with `nginx` and `ftp`)
-- `portainer-data` (bonus) → `/home/oben-jha/data/portainer`
-Because the data lives outside the containers, `make clean` (which only removes
-containers) leaves it intact — a subsequent `make` reuses the existing database and
-WordPress install. `make fclean` is the only target that deletes this data, so use it
-deliberately when a fully fresh install is needed.
- 
-## 7. Service-specific notes
- 
-- **mariadb**: on first boot (`/var/lib/mysql/mysql` absent), the entrypoint runs
-  `mysqld --bootstrap` to create the database/user and set the root password, then
-  execs the real `mysqld` process as PID 1 — no supervisor or `tail -f` hack.
-- **wordpress**: the entrypoint uses `wp-cli` to download core, write `wp-config.php`,
-  run `wp core install`, create the admin and a secondary user, and configure the
-  Redis object-cache plugin, all idempotently (skipped if `wp-config.php` already
-  exists).
-- **nginx**: terminates TLS (`TLSv1.2`/`TLSv1.3` only) on `443`, proxies `.php`
-  requests to `wordpress:9000` and `/adminer` to `adminer:9000` via FastCGI.
-- **redis**, **adminer**, **ftp**, **website**, **portainer**: bonus services, each
-  with its own Dockerfile; `redis` and `adminer` are on the `inception` network,
-  `ftp`/`website`/`portainer` additionally expose their own host ports.
- 
+
+Build the images:
+
+```bash
+docker compose -f srcs/docker-compose.yml build
+```
+
+Start the services:
+
+```bash
+docker compose -f srcs/docker-compose.yml up -d
+```
+
+Stop the services:
+
+```bash
+docker compose -f srcs/docker-compose.yml stop
+```
+
+Remove the containers:
+
+```bash
+docker compose -f srcs/docker-compose.yml down
+```
+
+## Makefile commands
+
+```bash
+make
+make start
+make stop
+make clean
+make fclean
+make re
+```
+
+- `make`: build and start the infrastructure.
+- `make start`: start stopped containers.
+- `make stop`: stop running containers.
+- `make clean`: remove the containers.
+- `make fclean`: remove project data and unused Docker resources.
+- `make re`: clean and rebuild the project.
+
+## Containers
+
+The Compose services are:
+
+```text
+mariadb
+redis
+wordpress
+adminer
+nginx
+ftp
+website
+backup
+```
+
+Each service has its own container.
+
+Check running containers:
+
+```bash
+docker ps
+```
+
+Inspect a container:
+
+```bash
+docker inspect <container_name>
+```
+
+View logs:
+
+```bash
+docker logs <container_name>
+```
+
+Open a shell in a running container:
+
+```bash
+docker exec -it <container_name> bash
+```
+
+## Network
+
+The containers communicate through the Docker network:
+
+```text
+inception
+```
+
+The services can communicate using their Compose service names, for example:
+
+```text
+mariadb
+wordpress
+redis
+adminer
+website
+```
+
+NGINX communicates with WordPress through:
+
+```text
+wordpress:9000
+```
+
+## Volumes and persistence
+
+The project uses the following named volumes:
+
+```text
+db-data
+wp-data
+backup-data
+```
+
+They are used for:
+
+- `db-data`: MariaDB data.
+- `wp-data`: WordPress website files.
+- `backup-data`: database backups.
+
+The configured host locations are:
+
+```text
+/home/oben-jha/data/mariadb
+/home/oben-jha/data/wordpress
+/home/oben-jha/data/backup
+```
+
+List Docker volumes:
+
+```bash
+docker volume ls
+```
+
+Inspect a volume:
+
+```bash
+docker volume inspect db-data
+```
+
+## Service-specific configuration
+
+### NGINX
+
+NGINX configuration:
+
+```text
+srcs/requirements/nginx/conf/nginx.conf
+```
+
+It listens on port `443` and uses TLSv1.2 and TLSv1.3.
+
+### WordPress
+
+WordPress is initialized by:
+
+```text
+srcs/requirements/wordpress/tools/auto_config.sh
+```
+
+PHP-FPM listens on port `9000`.
+
+### MariaDB
+
+MariaDB initialization is handled by:
+
+```text
+srcs/requirements/mariadb/tools/script.sh
+```
+
+MariaDB listens on port `3306` inside the infrastructure.
+
+### Redis
+
+Redis configuration:
+
+```text
+srcs/requirements/bonus/redis/conf/redis.conf
+```
+
+Redis listens on port `6379`.
+
+### FTP
+
+ProFTPD configuration:
+
+```text
+srcs/requirements/bonus/ftp/conf/proftpd.conf
+```
+
+FTP uses port `21` and passive ports `50000-50100`.
+
+### Backup
+
+The backup service periodically copies MariaDB data into the backup volume.
+
+Its script is:
+
+```text
+srcs/requirements/bonus/backup/tools/run.sh
+```

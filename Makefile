@@ -3,7 +3,6 @@ USER = $(shell whoami)
 all:
 	@mkdir -p /home/$(USER)/data/mariadb
 	@mkdir -p /home/$(USER)/data/wordpress
-	@mkdir -p /home/$(USER)/data/portainer
 	@mkdir -p /home/$(USER)/data/backup
 
 	@docker compose -f srcs/docker-compose.yml up -d --build 
@@ -20,9 +19,8 @@ clean:
 fclean: clean
 	@sudo rm -rf /home/$(USER)/data/mariadb/*
 	@sudo rm -rf /home/$(USER)/data/wordpress/*
-	@sudo rm -rf /home/$(USER)/data/portainer/*
+	@sudo rm -rf /home/$(USER)/data/backup/*
 	@docker system prune -af --volumes
 
 re: fclean all
 
-.PHONY: all clean fclean re
