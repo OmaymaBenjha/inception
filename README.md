@@ -121,16 +121,7 @@ The website is available at:
 
 - Docker documentation: https://docs.docker.com/
 - Docker Compose documentation: https://docs.docker.com/compose/
-- NGINX documentation: https://nginx.org/en/docs/
-- WordPress documentation: https://wordpress.org/documentation/
-- WP-CLI documentation: https://wp-cli.org/
-- MariaDB documentation: https://mariadb.com/kb/en/documentation/
-- Redis documentation: https://redis.io/docs/
-- ProFTPD documentation: http://www.proftpd.org/docs/
-- Adminer: https://www.adminer.org/
 
 ## AI usage
 
-AI was used as a learning and assistance tool during the project. It was used to help understand Docker, Docker Compose, networking, volumes, NGINX, PHP-FPM, MariaDB, Redis, FTP and related system administration concepts, and to help troubleshoot configuration and runtime errors.
-
-All generated information and solutions were reviewed and tested in the project.
+AI was used as a learning and assistance tool during the project along with the documentations. It was used to help understand Docker, Docker Compose, networking, volumes, NGINX, PHP-FPM, MariaDB, Redis, FTP and related system administration concepts, and to help troubleshoot configuration and runtime errors.
